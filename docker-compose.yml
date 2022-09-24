@@ -13,6 +13,7 @@ services:
       MYSQL_USER: django
   app:
     image: justereseau/beer-scanner:latest
+    build: ./app
     restart: always
     environment:
       MYSQL_HOST: db
