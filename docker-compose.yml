@@ -11,7 +11,7 @@ services:
       MYSQL_ROOT_PASSWORD: django-root
       MYSQL_PASSWORD: django-pass
       MYSQL_USER: django
-  web:
+  app:
     image: justereseau/beer-scanner:latest
     restart: always
     environment:
