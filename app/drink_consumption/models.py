@@ -14,22 +14,22 @@ class Product(models.Model):
 class Container(models.Model):
     product = models.ForeignKey(Product, on_delete=models.RESTRICT)
     capacity = models.FloatField(help_text="Capacity of the container in Liters.")
+    initial_content = models.FloatField(help_text="Content of the container at the begining, in Liters.", null=True, blank=True)
     cost = models.FloatField(help_text="Cost of the keg, in your desired unit.")
 
     def __str__(self):
-        refills = Refill.objects.all().filter(product=self)
-        consumed = 0
-        for refill in refills:
-            consumed += refill.container.capacity
-        return self.product.name + " (" + str(self.remaining()) + " L)"
+        return self.product.name + " (" + str(round(self.remaining(), 2)) + " L)"
 
     def remaining(self):
         refills = Refill.objects.all().filter(product=self)
         consumed = 0
         for refill in refills:
             consumed += refill.container.capacity
-        return self.capacity - consumed
-
+        if  self.initial_content == None:
+            initial_content = self.capacity
+        else:
+            initial_content = self.initial_content
+        return initial_content - consumed
 
 
 class PersonalContainer(models.Model):

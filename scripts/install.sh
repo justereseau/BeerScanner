@@ -1,18 +1,27 @@
 #!/bin/sh
-sudo apt install python3-pip python3-venv nginx
+sudo apt install python3-pip python3-venv nginx redis-server
+
+# Or for rh family: 
+sudo dnf install python3-pip python3-devel python3-virtualenv nginx redis
+# Si ca marche pas: sudo dnf install make automake gcc gcc-c++ kernel-devel
+
 python3 -m pip install --upgrade pip
 
 # Ajouter copie config NGINX
 # Ajouter fichier Service Web
 
-python3 -m venv ../venv
-. ../venv/bin/activate
+python3 -m venv ./.venv
+. ./.venv/bin/activate
 
-pip install -r ../app/requirements.txt
+pip install --upgrade pip
+pip install wheel
+pip install -r ./app/requirements.txt
 
-python3 ../app/manage.py makemigrations
-python3 ../app/manage.py migrate --noinput
-python3 ../app/manage.py runserver 0.0.0.0:8000
+python3 ./app/manage.py makemigrations
+python3 ./app/manage.py migrate --noinput
+python3 ./app/manage.py runserver 0.0.0.0:8000
+
+# INSTALL REDIS
 
 # ACME
 export CF_Token="---"

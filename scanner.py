@@ -1,8 +1,10 @@
 #!/usr/bin/python3
 
+# Require Sudo
+
 # Requirements: linux-headers-$(uname -r) 
-# apt-get install python-gobject libnotify-bin libnotify-dev
-# sudo pip3 install requests evdev
+# apt-get install python-gobject libnotify-bin libnotify-dev python-devel
+# sudo pip3 install requests evdev 
 
 import os
 import sys
@@ -11,9 +13,6 @@ import requests
 import json
 from time import sleep
 from threading import Thread
-
-# from gi.repository import Notify
-# Notify.init("App Name")
 
 class DeviceManager:
     def __init__(self, device_name):
@@ -89,7 +88,7 @@ def on_read(reader, uid):
         "reader_id": reader,
         "tag_id": uid
     }
-    response = requests.post("http://raspberrypi/api/scan/", data=parameters, timeout=3)
+    response = requests.post("http://beer.justereseau.ca/api/scan/", data=parameters, timeout=3)
     # Notify.Notification.new("Hi").show()
     if response.status_code == 200 or response.status_code == 201:
         jprint(response.json())

@@ -27,15 +27,11 @@ class ContainerAdmin(admin.ModelAdmin):
     list_display = ['get_title', 'cost', 'get_remaining']
 
     def get_title(self, obj):
-        return obj.product.name + " - " + str(obj.capacity) + " L"
+        return obj.product.name + " - " + str(round(obj.remaining(), 2)) + " L"
     get_title.short_description = 'Name'
 
     def get_remaining(self, obj):
-        refills = Refill.objects.all().filter(product=obj)
-        consumed = 0
-        for refill in refills:
-            consumed += refill.container.capacity
-        return str(obj.capacity - consumed) + " L"
+        return str(round(obj.remaining(), 2)) + " L"
     get_remaining.short_description = 'Remaining'
 
 class TapAdmin(admin.ModelAdmin):

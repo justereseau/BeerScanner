@@ -1,0 +1,239 @@
+{% extends "base_generic.html" %}
+
+{% block script %}
+<script>
+  let timeout;
+  let timeout_error;
+
+  function connect() {
+    var ws = new WebSocket(
+      "wss://" + window.location.host + "/ws/dashboard/"
+    );
+
+    ws.onopen = function (e) {
+      console.log("WebSocket is open now.");
+    };
+
+    ws.onclose = function (e) {
+      console.log("Socket is closed. Reconnect will be attempted in 1 second.", e.reason);
+      setTimeout(function () { connect(); }, 1000);
+    };
+
+    ws.onerror = function (err) {
+      console.error(
+        "Socket encountered error: ",
+        err.message,
+        "Closing socket"
+      );
+      ws.close();
+    };
+
+    ws.onmessage = function (e) {
+
+      const data = JSON.parse(e.data);
+      console.log(data);
+
+      if(data.type == "register_reffil" && data.result == "success"){
+        const notification = document.getElementById("notification");
+        const notification_description = document.getElementById("notification-description");
+
+        notification_description.innerHTML = "";
+        
+        const item1 = document.createElement("p");
+        item1.textContent = "Un " + data.container + " de " + data.product.name + " pour "  + data.user.first_name + ", Santé!";
+        const item2 = document.createElement("p");
+        item2.textContent = "Total: " + data.user.drinks + " verres, environ " + data.user.cost + "$";
+
+        notification_description.appendChild(item1);
+        notification_description.appendChild(item2);
+
+        notification.classList.add("notification-show");
+
+        clearTimeout(timeout);
+        timeout = setTimeout(function () {
+          notification.classList.remove("notification-show");
+        }, 5000);
+      
+      }else if(data.type == "register_reader_or_tag" && data.result == "success"){
+        const notification = document.getElementById("notification-register");
+        const notification_description = document.getElementById("notification-register-description");
+
+        document.getElementById("notification-error").classList.remove("notification-error-show");
+        document.getElementById("notification-register").classList.remove("notification-register-show");
+
+        notification_description.innerHTML = "";
+
+        if(data.reader != null){
+          const item = document.createElement("li");
+          item.textContent = "Le lecteur \"" + data.reader.physical_id + "\" a été ajouté. Il faut le configurer."
+          notification_description.appendChild(item);
+        }
+        if(data.tag != null){
+          const item = document.createElement("li");
+          item.textContent = "Le tag \"" + data.tag.uid + "\" a été ajouté. Il faut le configurer."
+          notification_description.appendChild(item);
+        }
+
+        notification.classList.add("notification-register-show");
+
+        clearTimeout(timeout_error);
+        timeout_error = setTimeout(function () {
+          document.getElementById("notification-error").classList.remove("notification-error-show");
+          document.getElementById("notification-register").classList.remove("notification-register-show");
+        }, 8000);
+      
+      }else if(data.result != "success"){
+        const notification = document.getElementById("notification-error");
+        const notification_description = document.getElementById("notification-error-description");
+
+        document.getElementById("notification-error").classList.remove("notification-error-show");
+        document.getElementById("notification-register").classList.remove("notification-register-show");
+
+        notification_description.innerHTML = "";
+        data.errors.forEach(error => {
+          const item = document.createElement("li");
+          item.textContent = error.name + ': ' + error.error_message;
+          notification_description.appendChild(item);
+        });
+
+        notification.classList.add("notification-error-show");
+
+        clearTimeout(timeout_error);
+        timeout_error = setTimeout(function () {
+          document.getElementById("notification-error").classList.remove("notification-error-show");
+          document.getElementById("notification-register").classList.remove("notification-register-show");
+        }, 8000);
+      
+      } else{
+        console.error("Unknown message received from ws.")
+      }
+
+    };
+  }
+  connect();
+
+  let interval;
+  function reload_data() {
+
+    // Refresh players
+    fetch(window.location.origin + "/api/players/").then(response => {
+      if(response.ok) {
+        response.json().then(data => {
+          const players = document.getElementById("players");
+          var inner_html = ""
+
+          for(const player of data.results){
+            inner_html += `
+            <div class="col-md-12 col-lg-6 col-xl-4" >
+                <div class="table-item">
+                  <div>
+                    <span class="h4">` + player.name + ` </span>
+                  </div><hr />
+                  A bu ` + player.volume + `{{ player.volume }},
+                  en ` + player.reffils + `{{ player.reffils }} verre` + (player.reffils > 1 ? 's' : '') + `
+                </div>
+              </div>`;
+          }
+
+          players.innerHTML = inner_html;
+        });
+      } else {
+        console.log('Mauvaise réponse du réseau');
+      }
+    }).catch(function(error) {
+      console.log('Il y a eu un problème avec l\'opération fetch: ' + error.message);
+    });
+
+    // Refresh taps
+    fetch(window.location.origin + "/api/taps/").then(response => {
+      if(response.ok) {
+        response.json().then(data => {
+          const taps = document.getElementById("taps");
+          var inner_html = ""
+
+          for(const tap of data.results){
+            inner_html += `
+            <div class="col-md-12 col-lg-6 col-xl-4" >
+              <div class="table-item">
+                  <span class="h4">` + tap.onTap.name + `</span><br/><span class="h5">` + tap.remaining + ` L restants</span>
+              </div>
+            </div>`;
+          }
+
+          taps.innerHTML = inner_html;
+        });
+      } else {
+        console.log('Mauvaise réponse du réseau');
+      }
+    }).catch(function(error) {
+      console.log('Il y a eu un problème avec l\'opération fetch: ' + error.message);
+    });
+
+
+    clearTimeout(interval);
+    interval = setTimeout(reload_data, 5000);
+  }
+  reload_data();
+
+
+</script>
+{% endblock %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+  <div id="notification" class="notification">
+    <div class="notification-content">
+      <p>
+        <h1 id="notification-title" >Boesson enregistrée!</h1><br/>
+        <h3 id="notification-description" ></h3>
+      </p>
+    </div>
+  </div>
+
+  <div id="notification-register" class="notification-register">
+    <p><h1 id="notification-register-title" >Tag ou Lecteur enregistré!</h1></p>
+    <ul id="notification-register-description"></ul>
+  </div>
+
+  <div id="notification-error" class="notification-error">
+    <p><h1 id="notification-error-title" >Error</h1></p>
+    <duliv id="notification-error-description"></ul>
+  </div>
+
+  <section class="ftco-top">
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-md-6 text-center mb-5">
+          <h2 class="heading-section">Sur nos Lignes</h2>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-12">
+          <div class="container">
+            <div id="taps" class="row"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="ftco-section">
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-md-6 text-center mb-5">
+          <span class="heading-section h2">Meilleurs Buveurs</span>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-12">
+          <div class="container">
+            <div class="row" id="players"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+{% endblock %}
+
+
+{% block footer %}{% endblock %}
