@@ -1,3 +1,15 @@
+# BeerScanner
+
+## Fonctionnements
+
+### Top Players
+
+Tout les comptes faisant partit du groupe `players` sont affichés dans la liste des plus gros buveurs.
+
+### Websocket
+
+La communication bidirectionnelle est assurée par un websocket. Celui-ci utilise [Channel Layer](https://channels.readthedocs.io/en/latest/topics/channel_layers.html) et Redis.
+
 ## Development
 
 ### With docker and docker compose
