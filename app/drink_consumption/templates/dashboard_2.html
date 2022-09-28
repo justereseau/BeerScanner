@@ -7,7 +7,7 @@
 
   function connect() {
     var ws = new WebSocket(
-      "wss://" + window.location.host + "/ws/dashboard/"
+      "ws://" + window.location.host + "/ws/dashboard/"
     );
 
     ws.onopen = function (e) {
