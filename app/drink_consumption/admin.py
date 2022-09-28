@@ -1,14 +1,15 @@
 from django.contrib import admin
 from .models import *
 
+
 class ProductAdmin(admin.ModelAdmin):
     list_display = ('name', 'producer', 'style', 'abv')
 
 
 class RefillAdmin(admin.ModelAdmin):
     model=Refill
-    list_display = ['pk', 'get_client', 'product', 'container', 'get_cost', 'tag', 'created_at']
-    list_filter = ['user', 'product', 'container', 'tag', 'created_at']
+    list_display = ['pk', 'get_client', 'product', 'capacity', 'get_cost', 'tag', 'created_at']
+    list_filter = ['user', 'product', 'capacity', 'tag', 'created_at']
 
     def get_client(self, obj):
         if obj.user.first_name != '':
@@ -18,7 +19,7 @@ class RefillAdmin(admin.ModelAdmin):
     get_client.short_description = "Client"
 
     def get_cost(self, obj):
-        return str(round(obj.product.cost/obj.product.capacity*obj.container.capacity, 2)) + " $"
+        return str(round(obj.product.cost/obj.product.capacity*obj.capacity, 2)) + " $"
     get_cost.short_description = "Cost"
 
 
@@ -49,10 +50,15 @@ class ReaderAdmin(admin.ModelAdmin):
             return obj.forTap.onTap
         return None
 
+
+class TagAdmin(admin.ModelAdmin):
+    list_display = ['owner', 'linked_container', 'description', 'uid']
+
+
 admin.site.register(Product, ProductAdmin)
 admin.site.register(Container, ContainerAdmin)
 admin.site.register(PersonalContainer)
-admin.site.register(Tag)
+admin.site.register(Tag, TagAdmin)
 admin.site.register(Refill, RefillAdmin)
 admin.site.register(Tap, TapAdmin)
 admin.site.register(Reader, ReaderAdmin)

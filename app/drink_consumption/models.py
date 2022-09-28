@@ -15,16 +15,20 @@ class Container(models.Model):
     product = models.ForeignKey(Product, on_delete=models.RESTRICT)
     capacity = models.FloatField(help_text="Capacity of the container in Liters.")
     initial_content = models.FloatField(help_text="Content of the container at the begining, in Liters.", null=True, blank=True)
+    refill_capacity_override = models.FloatField(help_text="Content of a refill, in Liters. (used for cans)", null=True, blank=True)
     cost = models.FloatField(help_text="Cost of the keg, in your desired unit.")
 
     def __str__(self):
+        if self.refill_capacity_override is not None:
+            return self.product.name + " (" + str(round(self.remaining()/self.refill_capacity_override)) + " cans)"
+
         return self.product.name + " (" + str(round(self.remaining(), 2)) + " L)"
 
     def remaining(self):
         refills = Refill.objects.all().filter(product=self)
         consumed = 0
         for refill in refills:
-            consumed += refill.container.capacity
+            consumed += refill.capacity
         if  self.initial_content == None:
             initial_content = self.capacity
         else:
@@ -53,17 +57,17 @@ class Tag(models.Model):
 
 
 class Refill(models.Model):
-    user = models.ForeignKey(User, on_delete=models.RESTRICT )
+    user = models.ForeignKey(User, on_delete=models.RESTRICT)
     tag = models.ForeignKey(Tag, on_delete=models.SET_NULL, blank=True, null=True)
-    product = models.ForeignKey(Container, on_delete=models.RESTRICT )
-    container = models.ForeignKey(PersonalContainer, on_delete=models.RESTRICT, default=1)
+    product = models.ForeignKey(Container, on_delete=models.RESTRICT)
+    capacity = models.FloatField(help_text="Capacity of the container in Liters.")
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.user.username + " - " + self.product.product.name + " - " + str(self.cost()) + "$"
 
     def cost(self):
-        return round(self.product.cost/self.product.capacity*self.container.capacity, 2)
+        return round(self.product.cost/self.product.capacity*self.capacity, 2)
 
 
 class Tap(models.Model):

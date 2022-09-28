@@ -133,7 +133,7 @@ def dashboard(request):
         drinks = 0
         for refill in refills:
             drinks += 1
-            volume += refill.container.capacity
+            volume += refill.capacity
 
         if player.first_name == "":
             name = player.username

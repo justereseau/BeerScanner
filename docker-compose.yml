@@ -1,16 +1,19 @@
 version: "3.9"
 
 services:
-  db:
-    image: mariadb
-    restart: always
-    volumes:
-      - ./dbdata:/var/lib/mysql
-    environment:
-      MYSQL_DATABASE: django-db
-      MYSQL_ROOT_PASSWORD: django-root
-      MYSQL_PASSWORD: django-pass
-      MYSQL_USER: django
+  redis:
+    image: "redis:alpine"
+
+  # db:
+  #   image: mariadb
+  #   restart: always
+  #   volumes:
+  #     - database:/var/lib/mysql
+  #   environment:
+  #     MYSQL_DATABASE: django-db
+  #     MYSQL_ROOT_PASSWORD: django-root
+  #     MYSQL_PASSWORD: django-pass
+  #     MYSQL_USER: django
   app:
     image: justereseau/beer-scanner:latest
     build: ./app
@@ -27,3 +30,7 @@ services:
       - redis
     volumes:
       - ./data:/data
+      - ./io:/io
+
+# volumes:
+#   database:

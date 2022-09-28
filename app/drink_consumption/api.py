@@ -87,7 +87,16 @@ def tag_scan(request):
     user = tag.owner
     container = tag.linked_container
 
-    Refill.objects.create(user=user, tag=tag, product=product, container=container).save()
+    if product.refill_capacity_override is not None:
+        capacity = product.refill_capacity_override
+        container_name = "can"
+    else:
+        capacity = container.capacity
+        container_name = container.name
+
+    Refill.objects.create(user=user, tag=tag, product=product, capacity=capacity).save()
+    
+    result = {}
 
     refills = Refill.objects.filter(user=user)
     volume = 0
@@ -95,15 +104,15 @@ def tag_scan(request):
     cost = 0
     for refill in refills:
         drinks += 1
-        volume += refill.container.capacity
+        volume += refill.capacity
         cost += refill.cost()
 
     result = {}
     result['result'] = 'success'
-    result['container'] = container.name
+    result['container'] = container_name
     result['user'] = UserSerializer(user).data
     result['product'] = ProductSerializer(product.product).data
-    result['cost'] = round(product.cost/product.capacity*container.capacity, 2)
+    result['cost'] = round(product.cost/product.capacity*capacity, 2)
 
     result['user']['drinks'] = drinks
     result['user']['cost'] = round(cost, 2)
@@ -142,7 +151,7 @@ def players(request):
         drinks = 0
         for refill in refills:
             drinks += 1
-            volume += refill.container.capacity
+            volume += refill.capacity
 
         if player.first_name == "":
             name = player.username
@@ -154,7 +163,7 @@ def players(request):
         else:
             volume_s = str(round(volume, 2)) + "L"
 
-        players_d.append({'name': name, 'username': player.username, 'reffils': drinks, 'volume': volume_s, 'liters': volume})
+        players_d.append({'name': name, 'username': player.username, 'reffils': drinks, 'volume': volume_s, 'liters': volume })
 
     players_d.sort(key=lambda x: x.get('liters'), reverse=True)
     result = {'results': players_d}
