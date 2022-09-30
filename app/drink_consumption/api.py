@@ -209,3 +209,13 @@ def last_scan(request):
     players_d.sort(key=lambda x: x.get('liters'), reverse=True)
     result = {'results': players_d}
     return Response(result)
+
+@api_view(['GET'])
+def cans(request):
+    containers = Container.objects.filter(refill_capacity_override__isnull=False)
+    containers_d = []
+    for container in containers:
+        can_cost = container.cost/container.capacity*container.refill_capacity_override
+        containers_d.append({'name': container.product.name, 'remaining': round(container.remaining()/container.refill_capacity_override), 'cost': round(can_cost, 2), 'batch_number': container.product.batch_number})
+    result = {'results': containers_d}
+    return Response(result)
