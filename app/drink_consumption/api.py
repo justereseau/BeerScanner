@@ -143,6 +143,11 @@ def get_reffil_list(request):
 def players(request):
     players = User.objects.filter(groups__name='players', is_active=True)
 
+    if 'tag_id' in request.GET:
+        tag = get_object_or_404(Tag, uid=request.GET['tag_id'])
+        player = tag.owner
+        return Response(UserSerializer(player).data, status=status.HTTP_200_OK)
+
     players_d = []
 
     for player in players:
