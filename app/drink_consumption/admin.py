@@ -3,7 +3,7 @@ from .models import *
 
 
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ('name', 'producer', 'style', 'abv')
+    list_display = ('batch_number', 'name', 'producer', 'style', 'abv')
 
 
 class RefillAdmin(admin.ModelAdmin):
@@ -35,10 +35,12 @@ class ContainerAdmin(admin.ModelAdmin):
         return str(round(obj.remaining(), 2)) + " L"
     get_remaining.short_description = 'Remaining'
 
+
 class TapAdmin(admin.ModelAdmin):
     list_display = ['name', 'get_ontap']
     def get_ontap(self, obj):
         return obj.onTap
+
 
 class ReaderAdmin(admin.ModelAdmin):
     list_display = ['name', 'physical_id', 'get_tap', 'get_ontap']

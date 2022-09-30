@@ -13,7 +13,7 @@ class ContainerSerializer(serializers.HyperlinkedModelSerializer):
 class ProductSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Product
-        fields = ['name', 'style', 'producer', 'abv']
+        fields = ['name', 'style', 'producer', 'abv', 'batch_number']
 
 
 class UserSerializer(serializers.HyperlinkedModelSerializer):

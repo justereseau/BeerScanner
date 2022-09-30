@@ -7,6 +7,7 @@ class Product(models.Model):
     style = models.CharField(max_length=200, blank=True, default="")
     producer = models.CharField(max_length=200, blank=True, default="")
     abv = models.FloatField(help_text="Alcohol By Volume.", default=0)
+    batch_number = models.CharField(max_length=200, blank=True, unique=True, default="")
     def __str__(self):
         return self.name
 
