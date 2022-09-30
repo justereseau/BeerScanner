@@ -8,21 +8,19 @@
   <title>{% block title %}{% endblock %}</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-
-  <link rel="stylesheet" href="/static/dashboard/css/font-awesome.min.css">
-
-  <link rel="stylesheet" href="/static/dashboard/css/style.css">
-
-  <link href="{% sass_src 'dashboard/css/style2.scss' %}" rel="stylesheet" type="text/css" />
-
+  <link rel="stylesheet" type="text/css" href="{% sass_src 'dashboard/css/font-awesome.min.css' %}" />
+  <link rel="stylesheet" type="text/css" href="{% sass_src 'dashboard/css/style.css' %}" />
+  <link rel="stylesheet" type="text/css" href="{% sass_src 'dashboard/css/style2.scss' %}" />
 </head>
 
 <body>
+  <script src="{% sass_src 'dashboard/js/jquery.min.js' %}"></script>
+  <script src="{% sass_src 'dashboard/js/main.js' %}"></script>
+
   {% block script %}{% endblock %}
 
   {% block content %}{% endblock %}
 
-  
   {% block footer %}
   <section class="ftco-section">
     <div class="container">
@@ -41,10 +39,6 @@
     </div>
   </section>
   {% endblock %}
-
-
-  <script src="/static/dashboard/js/jquery.min.js"></script>
-  <script src="/static/dashboard/js/main.js"></script>
 
 </body>
 
