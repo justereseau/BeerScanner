@@ -3,6 +3,7 @@ from rest_framework.decorators import api_view
 from rest_framework import status
 from rest_framework.response import Response
 from django.contrib.admin.views.decorators import staff_member_required
+from django.shortcuts import get_object_or_404
 
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
@@ -223,4 +224,40 @@ def cans(request):
         can_cost = container.cost/container.capacity*container.refill_capacity_override
         containers_d.append({'name': container.product.name, 'remaining': round(container.remaining()/container.refill_capacity_override), 'cost': round(can_cost, 2), 'batch_number': container.product.batch_number})
     result = {'results': containers_d}
+    return Response(result)
+
+@api_view(['POST'])
+def buy_a_can(request, batch):
+    if 'username' not in request.data and 'tag_uuid' not in request.data:
+        return Response({'result': 'error', 'reason': 'missing parameters'}, status=status.HTTP_400_BAD_REQUEST)
+
+    if 'tag_uuid' in request.data:
+        tag = get_object_or_404(Tag, uid=request.data['tag_uuid'])
+        if 'username' not in request.data:
+            user = tag.owner
+        else:
+            user = get_object_or_404(User, username=request.data['username'])
+    else:
+        tag = None
+        user = get_object_or_404(User, username=request.data['username'])
+
+    product = get_object_or_404(Product, batch_number=batch)
+    container = get_object_or_404(Container, product=product)
+
+    if container.remaining() < container.refill_capacity_override:
+        return Response({'result': 'error', 'reason': 'no more can'}, status=status.HTTP_400_BAD_REQUEST)
+
+    refill = Refill(user=user, product=container, capacity=container.refill_capacity_override)
+
+    if tag is not None:
+        refill.tag = tag
+
+    refill.save()
+
+    result = {
+        'param': batch,
+        'request': request.data,
+        'user': user.username,
+        'product': product.name
+    }
     return Response(result)

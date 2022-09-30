@@ -149,3 +149,6 @@ def dashboard(request):
 
     players_d.sort(key=lambda x: x.get('liters'), reverse=True)
     return render(request, 'dashboard_2.html', {'taps': taps_d, 'players': players_d})
+
+def pos(request):
+    return render(request, 'pos.html')

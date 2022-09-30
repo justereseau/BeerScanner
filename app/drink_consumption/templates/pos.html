@@ -1,0 +1,263 @@
+{% extends "base_generic.html" %}
+
+{% block script %}
+<script>
+  const api_root = "http://" + window.location.host + "/api/";
+
+  const user_timeout = 30000;
+  let session;
+
+  const reload_interval = 3000;
+  let reload_timeout;
+
+  let user;
+  let selected_can;
+
+  // ======== NOTIFICATIONS ========
+  function showNotification(messages, title, type, timeout) {
+    let notification, notification_title, notification_description, notification_show_class;
+
+    if (type == "success") {
+      notification = document.getElementById("notification");
+      notification_title = document.getElementById("notification-title");
+      notification_description = document.getElementById("notification-description")
+      notification_show_class = "notification-show";
+    }
+    else if (type == "error") {
+      notification = document.getElementById("notification-error");
+      notification_title = document.getElementById("notification-error-title");
+      notification_description = document.getElementById("notification-error-description");
+      notification_show_class = "notification-error-show";
+    }
+    else if (type == "info") {
+      notification = document.getElementById("notification-info");
+      notification_title = document.getElementById("notification-info-title");
+      notification_description = document.getElementById("notification-info-description");
+      notification_show_class = "notification-info-show";
+    }
+
+    notification_description.innerHTML = "";
+
+    messages.forEach((message) => {
+      const item = document.createElement('p');
+      item.textContent = message;
+      notification_description.appendChild(item);
+    });
+
+    notification_title.textContent = title;
+    notification.classList.add(notification_show_class);
+
+    setTimeout(function () {
+      notification.classList.remove(notification_show_class);
+    }, timeout);
+  }
+  // ======== END NOTIFICATIONS ========
+
+  // ======== TAG READER ========
+  function submit_login() {
+    tag_uuid = document.getElementById("tag_uuid").value;
+    document.getElementById("tag_uuid").value = "";
+
+    fetch(api_root + "players/?tag_id=" + tag_uuid).then(response => {
+      if (response.ok) {
+        response.json().then(data => {
+          user = data;
+          if (user.first_name == "") user.first_name = user.username;
+
+          user.tag_uuid = tag_uuid;
+
+          document.getElementById("utilisateur_text").innerHTML = user.first_name + " est connecté. La session expire après 30 secondes.";
+          document.getElementById("utilisateur_buttons").hidden = false;
+
+          clearTimeout(session);
+          session = setTimeout(logout, user_timeout);
+        });
+      } else {
+        if (response.status == 404) {
+          showNotification(["Le tag n'est pas reconnu. Il faut l'enregistrer auprès de Lucas."], title="Erreur", type="error", timeout=2000);
+        } else {
+          showNotification(["Une erreur est survenue (" + response.status + ") . Veuillez réessayer."], title="Erreur", type="error", timeout=2000);
+        }
+        console.error('Mauvaise réponse du réseau');
+      }
+    }).catch(function (error) {
+      showNotification(["Une erreur est survenue. Veuillez réessayer."], title="Erreur", type="error", timeout=2000);
+      console.error('Il y a eu un problème avec l\'opération fetch: ' + error.message);
+    });
+  }
+  function logout() {
+    user = null;
+    document.getElementById("utilisateur_text").innerHTML = "Pas d'utilisateur connecté.";
+    document.getElementById("utilisateur_buttons").hidden = true;
+    if (selected_can != null) {
+      document.getElementById('can-' + selected_can).classList.remove("table-item-selected");
+      selected_can = null;
+    }
+    reload_data();
+  }
+  // ======== END TAG READER ========
+
+  // ======== DATA RELOAD ========
+  function reload_data() {
+    // Only reload if no user is connected
+    if(user == null){
+      fetch(api_root + "cans/").then(response => {
+        if (response.ok) {
+          response.json().then(data => {
+            const cans = document.getElementById("cans");
+            var inner_html = ""
+
+            availlable_cans = [];
+
+            for (const can of data.results) {
+              inner_html += `
+                <div class="col-md-12 col-lg-6 col-xl-4" onclick="select_can('` + can.batch_number + `')" >
+                  <div class="table-item" id="can-` + can.batch_number + `" >
+                      <span class="h4">#` + can.batch_number + ` - ` + can.name + `</span><br/><span class="h5">` + can.cost + ` $ - ` + can.remaining + ` cans restantes</span>
+                  </div>
+                </div>`;
+            }
+
+            cans.innerHTML = inner_html;
+          });
+        } else {
+          console.log('Mauvaise réponse du réseau');
+        }
+      }).catch(function (error) {
+        console.log('Il y a eu un problème avec l\'opération fetch: ' + error.message);
+      });
+    }
+
+    clearTimeout(reload_timeout);
+    reload_timeout = setTimeout(reload_data, reload_interval);
+  }
+  reload_data();
+  // ======== END DATA RELOAD ========
+
+  // ======== CAN SELECTION ========
+  function select_can(can_id) {
+    if (user == null) {
+      showNotification(["Il faut scanner ton bracelet avant de pouvoir acheter une canette !"], title="Non connecté", type="error", timeout=4000);
+      return;
+    }
+
+    if (selected_can != null) {
+      document.getElementById('can-' + selected_can).classList.remove("table-item-selected");
+      if (selected_can == can_id) {
+        selected_can = null;
+        return;
+      }
+    }
+
+    selected_can = can_id;
+    document.getElementById('can-' + selected_can).classList.add("table-item-selected");
+  }
+  function validate_can() {
+    if(selected_can == null) {
+      showNotification(["Il faut sélectionner une canette avant de pouvoir l'acheter !"], title="Erreur", type="error", timeout=4000);
+      return;
+    }
+
+    fetch(api_root + "cans/" + selected_can + "/buy/" , {
+      method: "post",
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        tag_uuid: user.tag_uuid
+      })
+    }).then( (response) => {
+      if (response.ok) {
+        response.json().then(data => {
+          showNotification(["Canette achetée avec succès !"], title="Succès", type="success", timeout=2000);
+          logout();
+        });
+      } else {
+        if (response.status == 400) {
+          response.json().then(data => {
+            showNotification([data.message], title="Erreur", type="error", timeout=4000);
+          });
+        } else {
+          showNotification(["Une erreur est survenue (" + response.status + ") . Veuillez réessayer."], title="Erreur", type="error", timeout=4000);
+        }
+        console.error('Mauvaise réponse du réseau');
+      }
+    });
+  }
+  // ======== END CAN SELECTION ========
+
+</script>
+{% endblock %}
+
+{% block title %}POS{% endblock %}
+
+{% block content %}
+<form onsubmit="submit_login(); return false">
+  <input type="text" id="tag_uuid" name="tag_uuid" onblur="this.focus()" autofocus required
+    style="position: absolute; top: -1000px; left: -1000px;">
+</form>
+
+<div id="notification" class="notification">
+  <div class="notification-content">
+    <p>
+      <h1 id="notification-title" ></h1><br/>
+      <h3 id="notification-description" ></h3>
+    </p>
+  </div>
+</div>
+<div id="notification-error" class="notification-error">
+  <p><h1 id="notification-error-title" ></h1></p>
+  <div class="notification-error-content" id="notification-error-description"></div>
+</div>
+<div id="notification-info" class="notification-info">
+  <p><h1 id="notification-info-title" ></h1></p>
+  <div class="notification-info-content" id="notification-info-description"></div>
+</div>
+
+<section class="ftco-top">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-md-6 text-center mb-5">
+        <h2 class="heading-section">Cannettes disponibles</h2>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-12">
+        <div class="container">
+          <div id="cans" class="row"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="ftco-section">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-md-6 text-center mb-5">
+        <h2 class="heading-section" id="utilisateur_text" >Pas d'utilisateur connecté.</h2>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-12">
+        <div class="container">
+          <div class="row" id="utilisateur_buttons" hidden>
+            <div class="col-md-12 col-lg-6 col-xl-6" onclick="logout()" >
+              <div class="table-item table-item-center table-item-red">
+                <span class="h4">Déconnecter</span>
+              </div>
+            </div>
+            <div class="col-md-12 col-lg-6 col-xl-6" onclick="validate_can()" >
+              <div class="table-item table-item-center table-item-green">
+                <span class="h4">Valider la selection</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block footer %}{% endblock %}
