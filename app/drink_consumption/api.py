@@ -132,11 +132,12 @@ def get_reffil_list(request):
     )
 
     writer = csv.writer(response)
-    writer.writerow(["id","created_at","user","product","container","cost"])
+    writer.writerow(["id","created_at","user","name","product","capacity","cost"])
 
     refills = Refill.objects.all()
     for refill in refills:
-        writer.writerow([refill.id, refill.created_at, refill.user.username, refill.product.product, refill.container, refill.cost()])
+        name = refill.user.first_name if refill.user.first_name != "" else refill.user.username
+        writer.writerow([refill.id, refill.created_at, refill.user, name, refill.product.product, refill.capacity, refill.cost()])
 
     return response
 
